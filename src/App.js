@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 // --- HELPER FUNCTIONS ---
 const toBase64 = file => new Promise((resolve, reject) => {
