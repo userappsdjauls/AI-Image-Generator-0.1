@@ -1,6 +1,27 @@
 import React, { useState } from 'react';
 
 // =================================================================
+// --- CONSTANTS ---
+// =================================================================
+const API_KEY = '09850a52-cc92-4c2d-9e61-72a700ab5007';
+
+// =================================================================
+// --- HELPER FUNCTIONS ---
+// =================================================================
+const toBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = error => reject(error);
+});
+
+const dataUrlToBlob = async (dataUrl) => {
+    const response = await fetch(dataUrl);
+    return await response.blob();
+};
+
+
+// =================================================================
 // --- MAIN APP COMPONENT ---
 // =================================================================
 const App = () => {
@@ -10,12 +31,9 @@ const App = () => {
     const [error, setError] = useState(null);
     const [generationHistory, setGenerationHistory] = useState([]);
     const [upscaledImageUrl, setUpscaledImageUrl] = useState(null);
-    // API Key is now hardcoded for convenience.
-    const [apiKey, setApiKey] = useState('09850a52-cc92-4c2d-9e61-72a700ab5007');
-
 
     const generateImage = async () => {
-        if (!apiKey) {
+        if (!API_KEY) {
             setError("The API key is missing from the code.");
             return;
         }
@@ -40,7 +58,7 @@ const App = () => {
             const response = await fetch('https://api.deepai.org/api/text2img', {
                 method: 'POST',
                 headers: {
-                    'api-key': apiKey,
+                    'api-key': API_KEY,
                 },
                 body: formData
             });
