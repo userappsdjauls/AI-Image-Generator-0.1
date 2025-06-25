@@ -65,7 +65,7 @@ const App = () => {
 
                 const visionParts = [{ text: visionPrompt }, { inlineData: { mimeType: file.type, data: base64Image } }];
                 const visionPayload = { contents: [{ role: "user", parts: visionParts }] };
-                const visionApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const visionApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${apiKey}`;
                 const visionResponse = await fetch(visionApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(visionPayload) });
                 if (!visionResponse.ok) throw new Error('Failed to analyze image.');
                 
@@ -129,7 +129,7 @@ const App = () => {
             const visionPrompt = `Analyze this image in detail. Describe the subject, clothing, setting, lighting, and artistic style. Create a descriptive paragraph that could be used to generate a similar image.`;
             const visionParts = [{ text: visionPrompt }, { inlineData: { mimeType: "image/png", data: base64 } }];
             const visionPayload = { contents: [{ role: "user", parts: visionParts }] };
-            const visionApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const visionApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${apiKey}`;
             
             const visionResponse = await fetch(visionApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(visionPayload) });
             if (!visionResponse.ok) throw new Error('Failed to analyze image for editing.');
@@ -180,7 +180,7 @@ const App = () => {
                 const visionPrompt = `Analyze the following image(s) with extreme detail to create a precise description for an image generator. Extract the most important details. Combine this into a concise, single paragraph.`;
                 const visionParts = [{ text: visionPrompt }, ...referenceImages.map(imgBase64 => ({ inlineData: { mimeType: "image/jpeg", data: imgBase64 } }))];
                 const visionPayload = { contents: [{ role: "user", parts: visionParts }] };
-                const visionApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const visionApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${apiKey}`;
                 const visionResponse = await fetch(visionApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(visionPayload) });
                 if (!visionResponse.ok) throw new Error('Failed to analyze reference images.');
 
