@@ -269,6 +269,24 @@ const App = () => {
                 <h1 className="text-4xl font-bold text-center mb-2 text-blue-400">Image Generator</h1>
                 <p className="text-center text-gray-400 mb-8">Create stunning visuals with enhanced precision.</p>
 
+                <div className="bg-gray-700/50 p-4 rounded-lg mb-8 border border-blue-500/30">
+                    <h2 className="text-lg font-bold text-white mb-2">Setup Required: Add Your API Key</h2>
+                    <p className="text-sm text-gray-300 mb-3">To power this app, you need a free Google AI API key. Paste it below to enable image generation.</p>
+                    <div className="flex items-center gap-2">
+                        <input
+                            id="api-key"
+                            type="password"
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            placeholder="Paste your Google AI API key here"
+                            className="w-full p-2 bg-gray-900 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">
+                        <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-semibold">Click here to get your free key from Google AI Studio.</a>
+                    </p>
+                </div>
+
                 <div className="grid md:grid-cols-2 gap-8 mb-8">
                     <div>
                         <div className="mb-6">
@@ -294,31 +312,20 @@ const App = () => {
                         </div>
                     </div>
                     <div className="flex flex-col">
-                        <div className="mb-4 space-y-2">
-                             <label htmlFor="api-key" className="block text-sm font-medium text-gray-300">Google AI API Key</label>
-                             <input 
-                                id="api-key" 
-                                type="password" 
-                                value={apiKey} 
-                                onChange={(e) => setApiKey(e.target.value)}
-                                placeholder="Enter your API key here"
-                                className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            />
-                            <p className="text-xs text-gray-400">Get a free key from <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Google AI Studio</a>.</p>
-                        </div>
                          <div className="mb-4 space-y-2">
                             <label className="block text-sm font-medium text-gray-300">Creative Tools</label>
-                            <label htmlFor="analysis-upload" className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-lg cursor-pointer">
+                            <label htmlFor="analysis-upload" className={`w-full font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-lg cursor-pointer ${!apiKey ? 'bg-gray-500 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700'}`}>
                                 {isAnalyzing ? 'Analyzing...' : 'Analyze Image to Create Prompt'}
                             </label>
-                            <input id="analysis-upload" type="file" accept="image/*" onChange={handleAnalysisImageChange} className="hidden" disabled={isAnalyzing}/>
+                            <input id="analysis-upload" type="file" accept="image/*" onChange={handleAnalysisImageChange} className="hidden" disabled={!apiKey || isAnalyzing}/>
                             <button onClick={handleBack} disabled={generationHistory.length === 0} className="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-500 disabled:cursor-not-allowed flex items-center justify-center shadow-lg">
                                 Back to Previous Generation
                             </button>
                         </div>
-                        <button onClick={generateImage} disabled={loading || isAnalyzing} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg disabled:bg-blue-800 disabled:cursor-not-allowed flex items-center justify-center shadow-lg mt-auto">
+                        <button onClick={generateImage} disabled={loading || isAnalyzing || !apiKey} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-500 disabled:cursor-not-allowed flex items-center justify-center shadow-lg mt-auto">
                             {loading ? ( <>{loadingMessage || 'Generating...'}</> ) : ( 'Generate 4 Variations' )}
                         </button>
+                        {!apiKey && <p className="text-xs text-center text-yellow-400 mt-2">Please add your API Key above to enable generation.</p>}
                     </div>
                 </div>
                 {error && ( <div className="p-4 mb-4 bg-red-900/50 border border-red-700 text-red-300 rounded-lg text-center"><p><strong>Error:</strong> {error}</p></div> )}
@@ -346,7 +353,7 @@ const App = () => {
                         </div>
                     ) : (
                         <div className="text-center text-gray-500 p-4 bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-600">
-                            <p>No images generated yet. Try creating some!</p>
+                            <p>Enter your API key above and start creating!</p>
                         </div>
                     )}
                 </div>
