@@ -6,22 +6,6 @@ import React, { useState } from 'react';
 const API_KEY = '09850a52-cc92-4c2d-9e61-72a700ab5007';
 
 // =================================================================
-// --- HELPER FUNCTIONS ---
-// =================================================================
-const toBase64 = file => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = error => reject(error);
-});
-
-const dataUrlToBlob = async (dataUrl) => {
-    const response = await fetch(dataUrl);
-    return await response.blob();
-};
-
-
-// =================================================================
 // --- MAIN APP COMPONENT ---
 // =================================================================
 const App = () => {
