@@ -30,6 +30,7 @@ const App = () => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [copied, setCopied] = useState(false);
     const [generationHistory, setGenerationHistory] = useState([]);
+    const [apiKey, setApiKey] = useState('');
 
     const handleImageChange = async (e) => {
         if (e.target.files) {
@@ -43,6 +44,10 @@ const App = () => {
     };
     
     const handleAnalysisImageChange = async (e) => {
+        if (!apiKey) {
+            setError("Please add your Google AI API Key to use this feature.");
+            return;
+        }
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             setIsAnalyzing(true);
@@ -51,19 +56,9 @@ const App = () => {
 
             try {
                 const base64Image = await toBase64(file);
-                const apiKey = "";
 
                 const visionPrompt = `
                     You are a professional photographic analyst. Your task is to perform a forensic-level analysis of the provided image and generate a highly precise, detailed, and structured description. This description must be so accurate that an AI image generator can replicate the image with 100% fidelity.
-
-                    Break down your analysis into the following strict components:
-                    - **Subject Description:** Meticulously detail every facial feature, expression, eye color, hair style/color/texture, age, ethnicity, and body type.
-                    - **Clothing & Attire:** Describe every single item of clothing, including its material (e.g., cotton, silk, denim), texture, color, pattern, and fit. Detail all accessories like jewelry, watches, or glasses.
-                    - **Pose & Composition:** Precisely describe the subject's pose, including the angle of the head, position of limbs, and body language. Detail the camera's shot type (e.g., close-up, medium shot, full-body shot), angle, and the compositional rules applied (e.g., rule of thirds).
-                    - **Lighting & Atmosphere:** Analyze the lighting setup. Is it soft, hard, natural, or studio lighting? Identify the key light, fill light, and backlight. Describe the color temperature of the light and the mood it creates.
-                    - **Environment/Setting:** Describe the background and foreground in detail. Identify the location, objects, colors, and textures.
-                    - **Artistic Style:** Specify the overall style (e.g., photorealistic, cinematic, vintage, dramatic portrait) and the camera settings that likely produced this look (e.g., shallow depth of field, high contrast).
-
                     Synthesize these structured points into a single, comprehensive, and highly descriptive paragraph. This is the final and only output you should provide.
                 `;
 
@@ -108,12 +103,15 @@ const App = () => {
     };
 
     const handleEdit = async (imageUrl) => {
+        if (!apiKey) {
+            setError("Please add your Google AI API Key to use this feature.");
+            return;
+        }
         setLoading(true);
         setLoadingMessage('Analyzing image for editing...');
         setError(null);
-        setImageUrls([]); // Clear old results to show loading indicator
+        setImageUrls([]); 
 
-        // Clean up old object URLs
         previewUrls.forEach(url => {
             if (url.startsWith('blob:')) {
                 URL.revokeObjectURL(url)
@@ -124,11 +122,9 @@ const App = () => {
             const blob = await dataUrlToBlob(imageUrl);
             const base64 = await toBase64(blob);
             
-            // Set the new reference image
             setReferenceImages([base64]);
-            setPreviewUrls([imageUrl]); // Use the data URL for preview as it's already loaded
+            setPreviewUrls([imageUrl]);
 
-            const apiKey = "";
             const visionPrompt = `Analyze this image in detail. Describe the subject, clothing, setting, lighting, and artistic style. Create a descriptive paragraph that could be used to generate a similar image.`;
             const visionParts = [{ text: visionPrompt }, { inlineData: { mimeType: "image/png", data: base64 } }];
             const visionPayload = { contents: [{ role: "user", parts: visionParts }] };
@@ -143,7 +139,7 @@ const App = () => {
             const visionResult = JSON.parse(visionText);
             const description = visionResult.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not generate a prompt. Please describe the image manually.';
             
-            setPrompt(description); // Set the generated description as the new prompt
+            setPrompt(description); 
 
         } catch (err) {
             setError(err.message);
@@ -156,6 +152,10 @@ const App = () => {
     };
 
     const generateImage = async () => {
+        if (!apiKey) {
+            setError("Please add your Google AI API Key to generate images.");
+            return;
+        }
         if (!prompt) {
             setError('Please enter a prompt.');
             return;
@@ -170,7 +170,6 @@ const App = () => {
         setImageUrls([]);
 
         try {
-            const apiKey = "";
             let finalPrompt;
             const negativePrompt = "Avoid: cartoon, 3d render, anime, painting, watermark, text, signature, low quality, blurry, deformed, disfigured, ugly, noise.";
 
@@ -208,7 +207,6 @@ const App = () => {
                      const errorJson = JSON.parse(errorText);
                      throw new Error(errorJson.error?.message || 'Failed to generate images.');
                  } catch(e) {
-                     // The error response wasn't JSON. Show the raw text.
                      throw new Error(`The API returned an error: ${errorText}`);
                  }
             }
@@ -296,6 +294,18 @@ const App = () => {
                         </div>
                     </div>
                     <div className="flex flex-col">
+                        <div className="mb-4 space-y-2">
+                             <label htmlFor="api-key" className="block text-sm font-medium text-gray-300">Google AI API Key</label>
+                             <input 
+                                id="api-key" 
+                                type="password" 
+                                value={apiKey} 
+                                onChange={(e) => setApiKey(e.target.value)}
+                                placeholder="Enter your API key here"
+                                className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                            <p className="text-xs text-gray-400">Get a free key from <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Google AI Studio</a>.</p>
+                        </div>
                          <div className="mb-4 space-y-2">
                             <label className="block text-sm font-medium text-gray-300">Creative Tools</label>
                             <label htmlFor="analysis-upload" className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-lg cursor-pointer">
