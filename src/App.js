@@ -208,7 +208,8 @@ const App = () => {
                      const errorJson = JSON.parse(errorText);
                      throw new Error(errorJson.error?.message || 'Failed to generate images.');
                  } catch(e) {
-                     throw new Error('Failed to generate images. Received non-JSON response.');
+                     // The error response wasn't JSON. Show the raw text.
+                     throw new Error(`The API returned an error: ${errorText}`);
                  }
             }
             
