@@ -31,6 +31,7 @@ const App = () => {
     const [copied, setCopied] = useState(false);
     const [generationHistory, setGenerationHistory] = useState([]);
     const [apiKey, setApiKey] = useState('');
+    const [showBillingError, setShowBillingError] = useState(false);
 
     const handleImageChange = async (e) => {
         if (e.target.files) {
@@ -167,6 +168,7 @@ const App = () => {
 
         setLoading(true);
         setError(null);
+        setShowBillingError(false);
         setImageUrls([]);
 
         try {
@@ -205,7 +207,11 @@ const App = () => {
                  const errorText = await imageResponse.text();
                  try {
                      const errorJson = JSON.parse(errorText);
-                     throw new Error(errorJson.error?.message || 'Failed to generate images.');
+                     const errorMessage = errorJson.error?.message || 'Failed to generate images.';
+                     if (errorMessage.includes("billed users")) {
+                         setShowBillingError(true);
+                     }
+                     throw new Error(errorMessage);
                  } catch(e) {
                      throw new Error(`The API returned an error: ${errorText}`);
                  }
@@ -269,7 +275,7 @@ const App = () => {
                 <h1 className="text-4xl font-bold text-center mb-2 text-blue-400">Image Generator</h1>
                 <p className="text-center text-gray-400 mb-8">Create stunning visuals with enhanced precision.</p>
 
-                <div className="bg-gray-700/50 p-4 rounded-lg mb-8 border border-blue-500/30">
+                 <div className="bg-gray-700/50 p-4 rounded-lg mb-8 border border-blue-500/30">
                     <h2 className="text-lg font-bold text-white mb-2">Setup Required: Add Your API Key</h2>
                     <p className="text-sm text-gray-300 mb-3">To power this app, you need a free Google AI API key. Paste it below to enable image generation.</p>
                     <div className="flex items-center gap-2">
@@ -286,6 +292,15 @@ const App = () => {
                         <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-semibold">Click here to get your free key from Google AI Studio.</a>
                     </p>
                 </div>
+
+                {showBillingError && (
+                    <div className="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg mb-6 text-left">
+                        <p className="font-bold text-lg mb-2">Action Required: Enable Billing</p>
+                        <p className="mb-3">The Imagen API is a premium service that requires a Google Cloud project with billing enabled. You likely won't be charged for normal usage due to the generous free tier, but the setup is required.</p>
+                        <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener noreferrer" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-md mt-1 w-full block text-center">Go to Google Cloud Billing</a>
+                        <p className="text-xs text-red-300/80 mt-2">After enabling billing, please try generating images again.</p>
+                    </div>
+                )}
 
                 <div className="grid md:grid-cols-2 gap-8 mb-8">
                     <div>
@@ -328,7 +343,7 @@ const App = () => {
                         {!apiKey && <p className="text-xs text-center text-yellow-400 mt-2">Please add your API Key above to enable generation.</p>}
                     </div>
                 </div>
-                {error && ( <div className="p-4 mb-4 bg-red-900/50 border border-red-700 text-red-300 rounded-lg text-center"><p><strong>Error:</strong> {error}</p></div> )}
+                {error && !showBillingError && ( <div className="p-4 mb-4 bg-red-900/50 border border-red-700 text-red-300 rounded-lg text-center"><p><strong>Error:</strong> {error}</p></div> )}
                 
                 <div className="min-h-[250px] flex items-center justify-center">
                     {loading ? (
