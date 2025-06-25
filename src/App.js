@@ -10,8 +10,15 @@ const App = () => {
     const [error, setError] = useState(null);
     const [generationHistory, setGenerationHistory] = useState([]);
     const [upscaledImageUrl, setUpscaledImageUrl] = useState(null);
+    // API Key is now hardcoded for convenience.
+    const apiKey = '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';
+
 
     const generateImage = async () => {
+        if (!apiKey) {
+            setError("The OpenAI API key is missing from the code.");
+            return;
+        }
         if (!prompt) {
             setError('Please enter a prompt.');
             return;
@@ -26,32 +33,35 @@ const App = () => {
         setImageUrl('');
 
         try {
-            // Using a CORS proxy to bypass browser security restrictions for public APIs.
-            const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-            const apiUrl = 'https://api.fluxai.art/text2image';
-
-            const response = await fetch(proxyUrl + apiUrl, {
+            const response = await fetch('https://api.openai.com/v1/images/generations', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
                 },
                 body: JSON.stringify({
+                    model: "dall-e-3", // Using the DALL-E 3 model
                     prompt: prompt,
+                    n: 1, // OpenAI currently only supports n=1 for dall-e-3
+                    size: "1024x1024",
                 })
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`API request failed: ${errorText}`);
+                const errorData = await response.json();
+                throw new Error(errorData.error.message || `API request failed with status ${response.status}`);
             }
 
-            // This API returns the image directly as a blob, not a JSON response.
-            const imageBlob = await response.blob();
-            const newImageUrl = URL.createObjectURL(imageBlob);
-            setImageUrl(newImageUrl);
+            const result = await response.json();
+
+            if (result.data && result.data[0] && result.data[0].url) {
+                setImageUrl(result.data[0].url);
+            } else {
+                throw new Error('Image URL not found in the API response.');
+            }
 
         } catch (err) {
-            setError(`Network error: ${err.message}. This can happen due to the public API's rate limits or the CORS proxy being busy. Please try again in a moment.`);
+            setError(err.message);
         } finally {
             setLoading(false);
         }
@@ -61,28 +71,21 @@ const App = () => {
         if (generationHistory.length === 0) return;
         const newHistory = [...generationHistory];
         const lastGeneration = newHistory.shift();
-        // Clean up the old blob URL from the previous "back" action if it exists
-        if(imageUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(imageUrl);
-        }
         setImageUrl(lastGeneration);
         setGenerationHistory(newHistory);
     };
 
     const downloadImage = () => {
-        const link = document.createElement('a');
-        link.href = imageUrl;
-        link.download = `generated-image-${Date.now()}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // Since OpenAI returns a URL, we need to fetch it and create a blob to download it.
+        // This can be blocked by CORS policies. A simpler way is to open it in a new tab.
+        window.open(imageUrl, '_blank');
     };
 
     return (
         <div className="bg-gray-900 text-white min-h-screen flex flex-col items-center font-sans p-4">
             <div className="w-full max-w-2xl mx-auto bg-gray-800 rounded-2xl shadow-xl p-6 md:p-8">
                 <h1 className="text-4xl font-bold text-center mb-2 text-blue-400">Image Generator</h1>
-                <p className="text-center text-gray-400 mb-8">Create stunning visuals with a simple text prompt.</p>
+                <p className="text-center text-gray-400 mb-8">Powered by OpenAI DALL-E 3</p>
 
                 <div className="mb-6">
                     <label htmlFor="prompt" className="block text-sm font-medium text-gray-300 mb-2">Describe the image you want to create:</label>
