@@ -10,13 +10,12 @@ const App = () => {
     const [error, setError] = useState(null);
     const [generationHistory, setGenerationHistory] = useState([]);
     const [upscaledImageUrl, setUpscaledImageUrl] = useState(null);
-    // API Key is now hardcoded for convenience.
-    const apiKey = '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';
+    const [apiKey, setApiKey] = useState('');
 
 
     const generateImage = async () => {
         if (!apiKey) {
-            setError("The OpenAI API key is missing from the code.");
+            setError("Please enter your OpenAI API key to generate images.");
             return;
         }
         if (!prompt) {
@@ -86,6 +85,25 @@ const App = () => {
             <div className="w-full max-w-2xl mx-auto bg-gray-800 rounded-2xl shadow-xl p-6 md:p-8">
                 <h1 className="text-4xl font-bold text-center mb-2 text-blue-400">Image Generator</h1>
                 <p className="text-center text-gray-400 mb-8">Powered by OpenAI DALL-E 3</p>
+                
+                <div className="bg-gray-700/50 p-4 rounded-lg mb-8 border border-blue-500/30">
+                    <h2 className="text-lg font-bold text-white mb-2">Setup Required: Add Your API Key</h2>
+                    <p className="text-sm text-gray-300 mb-3">To power this app, you need your OpenAI API key. Paste it below to enable image generation.</p>
+                    <div className="flex items-center gap-2">
+                        <input
+                            id="api-key"
+                            type="password"
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            placeholder="Paste your OpenAI API key here"
+                            className="w-full p-2 bg-gray-900 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                     <p className="text-xs text-gray-400 mt-2">
+                        <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-semibold">Click here to get your API key from OpenAI.</a>
+                    </p>
+                </div>
+
 
                 <div className="mb-6">
                     <label htmlFor="prompt" className="block text-sm font-medium text-gray-300 mb-2">Describe the image you want to create:</label>
@@ -101,7 +119,7 @@ const App = () => {
                 <div className="flex gap-4 mb-6">
                     <button 
                         onClick={generateImage} 
-                        disabled={loading} 
+                        disabled={loading || !apiKey} 
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-500 disabled:cursor-not-allowed flex items-center justify-center shadow-lg"
                     >
                         {loading ? 'Generating...' : 'Generate Image'}
@@ -135,7 +153,7 @@ const App = () => {
                         </div>
                     ) : (
                          <div className="text-center text-gray-500">
-                            <p>Your generated image will appear here.</p>
+                             {!apiKey ? <p>Please add your API key above to start.</p> : <p>Your generated image will appear here.</p>}
                         </div>
                     )}
                 </div>
