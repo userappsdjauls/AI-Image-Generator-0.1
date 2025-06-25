@@ -10,14 +10,8 @@ const App = () => {
     const [error, setError] = useState(null);
     const [generationHistory, setGenerationHistory] = useState([]);
     const [upscaledImageUrl, setUpscaledImageUrl] = useState(null);
-    const [apiKey, setApiKey] = useState('');
-
 
     const generateImage = async () => {
-        if (!apiKey) {
-            setError("Please enter your DeepAI API key to generate images.");
-            return;
-        }
         if (!prompt) {
             setError('Please enter a prompt.');
             return;
@@ -32,34 +26,28 @@ const App = () => {
         setImageUrl('');
 
         try {
-            // Use FormData for this API as it's more robust
-            const formData = new FormData();
-            formData.append('text', prompt);
-
-            const response = await fetch('https://api.deepai.org/api/text2img', {
+            // Using a free, public API that does not require a key.
+            // This API may be rate-limited or have less advanced features than premium ones.
+            const response = await fetch('https://api.fluxai.art/text2image', {
                 method: 'POST',
                 headers: {
-                    'api-key': apiKey,
+                    'Content-Type': 'application/json',
                 },
-                body: formData
+                body: JSON.stringify({
+                    prompt: prompt,
+                    // The API might support other parameters, but we'll keep it simple.
+                })
             });
 
             if (!response.ok) {
-                // Try to parse the error for a more helpful message
-                const errorData = await response.json().catch(() => null);
-                if (response.status === 401) {
-                     throw new Error('Unauthorized: The API key is incorrect or has been disabled.');
-                }
-                throw new Error(errorData?.err || `API request failed with status ${response.status}`);
+                const errorText = await response.text();
+                throw new Error(`API request failed: ${errorText}`);
             }
 
-            const result = await response.json();
-
-            if (result.output_url) {
-                setImageUrl(result.output_url);
-            } else {
-                throw new Error('Image URL not found in the API response.');
-            }
+            // This API returns the image directly as a blob, not a JSON response.
+            const imageBlob = await response.blob();
+            const newImageUrl = URL.createObjectURL(imageBlob);
+            setImageUrl(newImageUrl);
 
         } catch (err) {
             setError(err.message);
@@ -72,14 +60,21 @@ const App = () => {
         if (generationHistory.length === 0) return;
         const newHistory = [...generationHistory];
         const lastGeneration = newHistory.shift();
+        // Clean up the old blob URL from the previous "back" action if it exists
+        if(imageUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(imageUrl);
+        }
         setImageUrl(lastGeneration);
         setGenerationHistory(newHistory);
     };
 
     const downloadImage = () => {
-        // Due to CORS policy, direct download is not possible.
-        // We open the image in a new tab for the user to save.
-        window.open(imageUrl, '_blank');
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = `generated-image-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     return (
@@ -87,25 +82,6 @@ const App = () => {
             <div className="w-full max-w-2xl mx-auto bg-gray-800 rounded-2xl shadow-xl p-6 md:p-8">
                 <h1 className="text-4xl font-bold text-center mb-2 text-blue-400">Image Generator</h1>
                 <p className="text-center text-gray-400 mb-8">Create stunning visuals with a simple text prompt.</p>
-                
-                <div className="bg-gray-700/50 p-4 rounded-lg mb-8 border border-blue-500/30">
-                    <h2 className="text-lg font-bold text-white mb-2">Setup Required: Add Your API Key</h2>
-                    <p className="text-sm text-gray-300 mb-3">To power this app, you need a free API key from DeepAI. Paste it below to enable image generation.</p>
-                    <div className="flex items-center gap-2">
-                        <input
-                            id="api-key"
-                            type="password"
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                            placeholder="Paste your DeepAI API key here"
-                            className="w-full p-2 bg-gray-900 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
-                    <p className="text-xs text-gray-400 mt-2">
-                        <a href="https://deepai.org/signup" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-semibold">Click here to get your free key from DeepAI.</a>
-                    </p>
-                </div>
-
 
                 <div className="mb-6">
                     <label htmlFor="prompt" className="block text-sm font-medium text-gray-300 mb-2">Describe the image you want to create:</label>
@@ -121,7 +97,7 @@ const App = () => {
                 <div className="flex gap-4 mb-6">
                     <button 
                         onClick={generateImage} 
-                        disabled={loading || !apiKey} 
+                        disabled={loading} 
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-500 disabled:cursor-not-allowed flex items-center justify-center shadow-lg"
                     >
                         {loading ? 'Generating...' : 'Generate Image'}
@@ -155,7 +131,7 @@ const App = () => {
                         </div>
                     ) : (
                          <div className="text-center text-gray-500">
-                             {!apiKey ? <p>Please add your API key above to start.</p> : <p>Your generated image will appear here.</p>}
+                            <p>Your generated image will appear here.</p>
                         </div>
                     )}
                 </div>
