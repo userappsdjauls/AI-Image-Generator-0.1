@@ -91,7 +91,9 @@ const App = () => {
     };
 
     const removeImage = (indexToRemove) => {
-        URL.revokeObjectURL(previewUrls[indexToRemove]);
+        if (previewUrls[indexToRemove].startsWith('blob:')) {
+            URL.revokeObjectURL(previewUrls[indexToRemove]);
+        }
         setReferenceImages(prev => prev.filter((_, index) => index !== indexToRemove));
         setPreviewUrls(prev => prev.filter((_, index) => index !== indexToRemove));
     };
@@ -169,42 +171,37 @@ const App = () => {
 
         try {
             const apiKey = "";
-            let finalPromptForImagen;
+            let finalPrompt;
             const negativePrompt = "Avoid: cartoon, 3d render, anime, painting, watermark, text, signature, low quality, blurry, deformed, disfigured, ugly, noise.";
 
-            setLoadingMessage('Summarizing your creative vision...');
-            
-            // Step 1: Combine all inputs into a single "master prompt"
-            let masterPrompt = prompt;
             if (referenceImages.length > 0) {
-                 const visionPrompt = `Based on the style and subject of the reference image(s), create an image that incorporates the following request: ${prompt}`;
-                 masterPrompt = visionPrompt; // In this case, the vision prompt becomes the master. You could also combine them.
+                setLoadingMessage('Analyzing reference images...');
+                const visionPrompt = `Analyze the following image(s) with extreme detail to create a precise description for an image generator. Extract the most important details. Combine this into a concise, single paragraph.`;
+                const visionParts = [{ text: visionPrompt }, ...referenceImages.map(imgBase64 => ({ inlineData: { mimeType: "image/jpeg", data: imgBase64 } }))];
+                const visionPayload = { contents: [{ role: "user", parts: visionParts }] };
+                const visionApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const visionResponse = await fetch(visionApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(visionPayload) });
+                if (!visionResponse.ok) throw new Error('Failed to analyze reference images.');
+
+                const visionText = await visionResponse.text();
+                if (!visionText) {
+                    throw new Error("Analysis API returned an empty response during generation.");
+                }
+                const visionResult = JSON.parse(visionText);
+                const description = visionResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                
+                finalPrompt = `Based on this detailed scene: "${description}", create a new photorealistic image that applies the following specific change: "${prompt}". All other details from the scene should remain as described. ${negativePrompt}`;
+            } else {
+                finalPrompt = `A photorealistic, highly detailed image of: ${prompt}. Style: cinematic, professional photography. ${negativePrompt}`;
             }
-
-            // Step 2: Use a language model to distill the master prompt into a clean, effective prompt for Imagen.
-            const summarizerPrompt = `You are an expert prompt engineer. Summarize the following user request into a concise, highly descriptive paragraph suitable for an AI image generator. Focus on the key visual elements: subject, action, clothing, setting, and style. The user's request is: "${masterPrompt}"`;
-
-            const summarizerPayload = { contents: [{ role: "user", parts: [{ text: summarizerPrompt }] }] };
-            const summarizerApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             
-            const summarizerResponse = await fetch(summarizerApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(summarizerPayload) });
-            if (!summarizerResponse.ok) throw new Error('Failed to summarize the prompt.');
+            console.log("Final prompt being sent to API:", finalPrompt);
 
-            const summarizerText = await summarizerResponse.text();
-            if (!summarizerText) throw new Error("Summarizer API returned an empty response.");
-
-            const summarizerResult = JSON.parse(summarizerText);
-            const summarizedPrompt = summarizerResult.candidates?.[0]?.content?.parts?.[0]?.text || masterPrompt; // Fallback to master prompt
-
-            finalPromptForImagen = `A photorealistic, highly detailed image of: ${summarizedPrompt}. ${negativePrompt}`;
-            
-            console.log("Final prompt being sent to API:", finalPromptForImagen);
-
-            // Step 3: Generate the image using the distilled prompt.
             setLoadingMessage('Generating high-precision images...');
-            const imagePayload = { instances: [{ prompt: finalPromptForImagen }], parameters: { "sampleCount": 4 } };
+            const imagePayload = { instances: [{ prompt: finalPrompt }], parameters: { "sampleCount": 4 } };
             const imageApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
             const imageResponse = await fetch(imageApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(imagePayload) });
+            
             if (!imageResponse.ok) {
                  const errorText = await imageResponse.text();
                  try {
