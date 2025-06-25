@@ -26,16 +26,17 @@ const App = () => {
         setImageUrl('');
 
         try {
-            // Using a free, public API that does not require a key.
-            // This API may be rate-limited or have less advanced features than premium ones.
-            const response = await fetch('https://api.fluxai.art/text2image', {
+            // Using a CORS proxy to bypass browser security restrictions for public APIs.
+            const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+            const apiUrl = 'https://api.fluxai.art/text2image';
+
+            const response = await fetch(proxyUrl + apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     prompt: prompt,
-                    // The API might support other parameters, but we'll keep it simple.
                 })
             });
 
@@ -50,7 +51,7 @@ const App = () => {
             setImageUrl(newImageUrl);
 
         } catch (err) {
-            setError(err.message);
+            setError(`Network error: ${err.message}. This can happen due to the public API's rate limits or the CORS proxy being busy. Please try again in a moment.`);
         } finally {
             setLoading(false);
         }
